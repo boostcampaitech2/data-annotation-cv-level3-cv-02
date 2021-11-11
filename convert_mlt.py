@@ -9,6 +9,9 @@ from tqdm import tqdm
 
 from torch.utils.data import DataLoader, ConcatDataset, Dataset
 
+'''
+데이터셋 을 UFO format으로 변환
+'''
 
 SRC_DATASET_DIR = '/data/datasets/ICDAR17_MLT'  # FIXME
 DST_DATASET_DIR = '/data/datasets/ICDAR17_Korean'  # FIXME
@@ -123,7 +126,7 @@ def main():
     mlt_valid = MLT17Dataset(osp.join(SRC_DATASET_DIR, 'raw/ch8_validation_images'),
                              osp.join(SRC_DATASET_DIR, 'raw/ch8_validation_gt'),
                              copy_images_to=dst_image_dir)
-    mlt_merged = ConcatDataset([mlt_train, mlt_valid]) # train과 valid 모두 학습에 사용
+    mlt_merged = ConcatDataset([mlt_train, mlt_valid]) # train,val 모두 학습데이터로 사용하기 위함
 
     anno = dict(images=dict())
     with tqdm(total=len(mlt_merged)) as pbar:
