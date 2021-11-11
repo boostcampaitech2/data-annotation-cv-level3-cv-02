@@ -1,0 +1,8 @@
+# pths
+pths/
+
+# trained_models
+trained_models/
+
+#__pycache__
+__pycache__/
