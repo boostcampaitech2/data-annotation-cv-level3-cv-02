@@ -3,7 +3,7 @@ import os.path as osp
 import json
 from argparse import ArgumentParser
 from glob import glob
-
+import numpy as np
 import torch
 import cv2
 from torch import cuda
@@ -41,12 +41,16 @@ def do_inference(model, ckpt_fpath, data_dir, input_size, batch_size, split='pub
     model.eval()
 
     image_fnames, by_sample_bboxes = [], []
-
+    filter_sharp = np.array([[-1, -1, -1, -1, -1],
+                         [-1, 2, 2, 2, -1],
+                         [-1, 2, 9, 2, -1],
+                         [-1, 2, 2, 2, -1],
+                         [-1, -1, -1, -1, -1]]) / 9.0
     images = []
     for image_fpath in tqdm(glob(osp.join(data_dir, '{}/*'.format(split)))):
         image_fnames.append(osp.basename(image_fpath))
 
-        images.append(cv2.imread(image_fpath)[:, :, ::-1])
+        images.append(cv2.filter2D(cv2.imread(image_fpath)[:, :, ::-1]), -1 , filter_sharp)
         if len(images) == batch_size:
             by_sample_bboxes.extend(detect(model, images, input_size))
             images = []

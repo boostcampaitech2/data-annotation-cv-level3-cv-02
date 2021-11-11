@@ -370,12 +370,7 @@ class SceneTextDataset(Dataset):
         if image.mode != 'RGB':
             image = image.convert('RGB')
         image = np.array(image)
-        filter_sharp = np.array([[-1, -1, -1, -1, -1],
-                         [-1, 2, 2, 2, -1],
-                         [-1, 2, 9, 2, -1],
-                         [-1, 2, 2, 2, -1],
-                         [-1, -1, -1, -1, -1]]) / 9.0
-        image = cv2.filter2D(image,-1,filter_sharp)
+        
         funcs = []
         if self.color_jitter:
             funcs.append(A.ColorJitter(0.5, 0.5, 0.5, 0.25))
