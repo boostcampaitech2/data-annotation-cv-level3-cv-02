@@ -8,3 +8,7 @@ trained_models/
 __pycache__/
 
 predictions/
+
+.env
+
+wandb/

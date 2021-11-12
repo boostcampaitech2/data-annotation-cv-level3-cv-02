@@ -20,6 +20,16 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import random
 
+from utils import Wandb,Calc_eval
+from utils import make_run_id, make_dir, save_args_to_json
+
+EVAL_DATA_LIST = {
+    'loss': 0.0,
+    'Cls loss': 0.0,
+    'Angle loss': 0.0,
+    'IoU loss': 0.0
+}
+
 def set_seed(random_seed):
     torch.manual_seed(random_seed)
     torch.cuda.manual_seed(random_seed)
@@ -48,6 +58,13 @@ def parse_args():
     parser.add_argument('--save_interval', type=int, default=5)
     parser.add_argument('--seed', type=int, default=42)
 
+    parser.add_argument('--train_transform', type=str, default="test_transform")
+
+    parser.add_argument('--wandb_env_path', type=str, default="./.env")
+    parser.add_argument('--wandb_entity', type=str, default="boostcamp-2th-cv-02team")
+    parser.add_argument('--wandb_project', type=str, default="data-annotation-cv-level3-02")
+    parser.add_argument('--wandb_unique_tag', type=str, default="")
+   
     args = parser.parse_args()
 
     if args.input_size % 32 != 0:
@@ -58,23 +75,18 @@ def parse_args():
 
 def do_validation(model, valid_loader):
     model.eval()
-    valid_metrics = {
-        'Val/loss': 0,
-        'Val/Cls loss': 0,
-        'Val/Angle loss': 0,
-        'Val/IoU loss': 0
-    }
-    
+
+    calc_eval_per_epoch = Calc_eval(**EVAL_DATA_LIST)
     with torch.no_grad():
         for img, gt_score_map, gt_geo_map, roi_mask in valid_loader:
             loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
-            valid_metrics['Val/loss'] += loss.item()
-            valid_metrics['Val/Cls loss'] += extra_info['cls_loss']
-            valid_metrics['Val/Angle loss'] += extra_info['angle_loss']
-            valid_metrics['Val/IoU loss'] += extra_info['iou_loss']
-        
-    for metric in valid_metrics.keys():
-        valid_metrics[metric] /= len(valid_loader)
+            loss_val = loss.item()
+            val_dict = {
+                'loss': loss_val, 'Cls loss': extra_info['cls_loss'], 
+                'Angle loss': extra_info['angle_loss'], 'IoU loss': extra_info['iou_loss']
+            }
+            calc_eval_per_epoch.input_data(**val_dict)
+    valid_metrics = calc_eval_per_epoch.get_result_data()
 
     return valid_metrics
 
@@ -84,8 +96,8 @@ def train_val_split(dataset, val_split=0.2):
     return Subset(dataset, train_idx), Subset(dataset, val_idx)
 
 
-def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
-                learning_rate, max_epoch, save_interval, seed):
+def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
+                learning_rate, max_epoch, save_interval, seed, train_transform, wandb_env_path, wandb_entity,wandb_project,wandb_unique_tag) :
      # init seed
     set_seed(args.seed)
 
@@ -112,6 +124,9 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     best_metric_score = int(1e9)
 
     for epoch in range(max_epoch):
+        if epoch % 10 ==0:
+            print(f"---CURRENT {epoch}EPOCH---")
+        calc_eval_per_epoch = Calc_eval(**EVAL_DATA_LIST)
         model.train()
         epoch_loss, epoch_start = 0, time.time()
         with tqdm(total=num_batches) as pbar:
@@ -128,36 +143,47 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
                 pbar.update(1)
                 val_dict = {
-                    'Cls loss': extra_info['cls_loss'], 'Angle loss': extra_info['angle_loss'],
-                    'IoU loss': extra_info['iou_loss']
+                    'loss':loss_val, 'Cls loss': extra_info['cls_loss'], 
+                    'Angle loss': extra_info['angle_loss'], 'IoU loss': extra_info['iou_loss']
                 }
+                calc_eval_per_epoch.input_data(**val_dict)
                 pbar.set_postfix(val_dict)
+        train_eval_metric = calc_eval_per_epoch.get_result_data()
+        wandb.log("Train", **train_eval_metric)
 
-        result = do_validation(model, valid_loader)
+        valid_eval_metric = do_validation(model, valid_loader)
+        wandb.log("Valid", **valid_eval_metric)
         scheduler.step()
 
         print('Mean loss: {:.4f} | Val loss: {:.4f} | Elapsed time: {} '.format(
-            epoch_loss / num_batches, result['Val/loss'], timedelta(seconds=time.time() - epoch_start)))
+            epoch_loss / num_batches, valid_eval_metric['loss'], timedelta(seconds=time.time() - epoch_start)))
 
         if (epoch + 1) % save_interval == 0:
-            if not osp.exists(model_dir):
-                os.makedirs(model_dir)
+            if not osp.exists(cur_path):
+                os.makedirs(cur_path)
 
-            ckpt_fpath = osp.join(model_dir, 'latest.pth')
+            ckpt_fpath = osp.join(cur_path, 'latest.pth')
             torch.save(model.state_dict(), ckpt_fpath)
             
-        if result['Val/loss'] < best_metric_score:
-            if not osp.exists(model_dir):
-                os.makedirs(model_dir)
+        if valid_eval_metric['loss'] < best_metric_score:
+            if not osp.exists(cur_path):
+                os.makedirs(cur_path)
 
-            ckpt_fpath = osp.join(model_dir, 'best.pth')
+            ckpt_fpath = osp.join(cur_path, 'best.pth')
             torch.save(model.state_dict(), ckpt_fpath)
-            best_metric_score = result['Val/loss']
+            best_metric_score = valid_eval_metric['loss']
             print(f"saved {ckpt_fpath}")
 
 
 def main(args):
-    do_training(**args.__dict__)
+    run_id = make_run_id()
+    cur_path = f'{args.model_dir}/{run_id}'
+    make_dir(cur_path)
+    save_args_to_json(args, cur_path)
+    wandb = Wandb(run_id, **args.__dict__)
+    wandb.init_wandb()
+    
+    do_training(wandb, cur_path, **args.__dict__)
 
 
 if __name__ == '__main__':
