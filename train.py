@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--max_epoch', type=int, default=200)
     parser.add_argument('--save_interval', type=int, default=5)
-    parser.add_argument('--seed', itype=int, default=42)
+    parser.add_argument('--seed', type=int, default=42)
 
     args = parser.parse_args()
 
@@ -85,11 +85,20 @@ def train_val_split(dataset, val_split=0.2):
 
 
 def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
-                learning_rate, max_epoch, save_interval):
+                learning_rate, max_epoch, save_interval, seed):
+     # init seed
+    set_seed(args.seed)
+
+    # data_dir로 복수개의 경로가 입력 되었을 때, 혹은 단일 경로만 입력 되었을 때를 처리하기 위함
+    if type(data_dir) is not list:
+        data_dir = [data_dir]
+
+    # load train data
     dataset = [SceneTextDataset(x, split='train', image_size=image_size, crop_size=input_size) for x in data_dir]
     dataset = EASTDataset(ConcatDataset(dataset))
-    valset = EASTDataset(SceneTextDataset("../input/data/ICDAR17_Korean", split="val", image_size=image_size, crop_size=input_size))
 
+    # load validation data
+    valset = EASTDataset(SceneTextDataset("../input/data/ICDAR17_Korean", split="val", image_size=image_size, crop_size=input_size))
     num_batches = math.ceil(len(dataset) / batch_size)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     valid_loader = DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
@@ -99,7 +108,7 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
-    
+
     best_metric_score = int(1e9)
 
     for epoch in range(max_epoch):
@@ -148,7 +157,6 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
 
 def main(args):
-    set_seed(args.seed) # init seed
     do_training(**args.__dict__)
 
 
