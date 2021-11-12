@@ -35,7 +35,7 @@ class Wandb:
 
         if self.args['wandb_unique_tag']:
             tags = [f"wandb_unique_tag: {self.args['wandb_unique_tag']}"]
-            name += f"_{self['wandb_unique_tag']}"
+            name += f"_{self.args['wandb_unique_tag']}"
 
         for k, v in self.args.items():
             tags.append(f"{k}: {v}")
