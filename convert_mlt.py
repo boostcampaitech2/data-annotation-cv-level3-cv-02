@@ -2,7 +2,8 @@ import json
 import os
 import os.path as osp
 from glob import glob
-from PIL import Image
+from PIL import Image, ImageOps
+import cv2
 
 import numpy as np
 from tqdm import tqdm
@@ -66,6 +67,7 @@ class MLT17Dataset(Dataset):
 
         image_fname = osp.basename(sample_info['image_path'])
         image = Image.open(sample_info['image_path'])
+        image = ImageOps.exif_transpose(image)
         img_w, img_h = image.size
 
         if self.copy_images_to:
