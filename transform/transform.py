@@ -37,11 +37,15 @@ from albumentations.augmentations.crops.transforms import CropNonEmptyMaskIfExis
 
 # ToTensor를 사용하면 동작을 안합니다.
 
+def NoTransform():
+    return None
+
+
 def BasicTransform():
     return A.Compose(
         [
             # RandomRotate90(),
-            Resize(512, 512),
+            # Resize(512, 512),
             # ToTensorV2(),
         ]
     )
@@ -59,7 +63,7 @@ def CustomTransform():
 
 def HardTransform():
     return A.Compose([
-        Resize(512, 512),
+        # Resize(512, 512),
         RandomRotate90(),
         HorizontalFlip(),
         VerticalFlip(),
@@ -68,7 +72,7 @@ def HardTransform():
         # GaussNoise(),
         Rotate(),
         RandomBrightnessContrast(),
-        ToTensorV2()
+        # ToTensorV2()
     ])
 
 def CutmixHardTransform():
