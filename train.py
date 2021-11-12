@@ -21,7 +21,7 @@ import numpy as np
 import random
 
 from utils import Wandb,Calc_eval
-from utils import make_run_id, get_path, make_dir, save_args_to_json
+from utils import make_run_id, make_dir, save_args_to_json
 
 EVAL_DATA_LIST = {
     'loss': 0.0,
