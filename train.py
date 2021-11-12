@@ -15,26 +15,38 @@ from east_dataset import EASTDataset
 from dataset import SceneTextDataset
 from dataset import CamperTextDataset
 from model import EAST
+from torch.utils.data import ConcatDataset, Subset
+from sklearn.model_selection import train_test_split
+import numpy as np
+import random
 
+def set_seed(random_seed):
+    torch.manual_seed(random_seed)
+    torch.cuda.manual_seed(random_seed)
+    torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(random_seed)
+    random.seed(random_seed)
 
 def parse_args():
     parser = ArgumentParser()
 
     # Conventional args
-    parser.add_argument('--data_dir', type=str,
+    parser.add_argument('--data_dir', type=str, nargs="+",
                         default=os.environ.get('SM_CHANNEL_TRAIN', '../input/data/ICDAR17_Korean'))
     parser.add_argument('--model_dir', type=str, default=os.environ.get('SM_MODEL_DIR',
                                                                         'trained_models'))
 
     parser.add_argument('--device', default='cuda' if cuda.is_available() else 'cpu')
-    parser.add_argument('--num_workers', type=int, default=4)
-
+    parser.add_argument('--num_workers', type=int, default=8)
     parser.add_argument('--image_size', type=int, default=1024)
     parser.add_argument('--input_size', type=int, default=512)
-    parser.add_argument('--batch_size', type=int, default=12)
+    parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--learning_rate', type=float, default=1e-3)
     parser.add_argument('--max_epoch', type=int, default=200)
     parser.add_argument('--save_interval', type=int, default=5)
+    parser.add_argument('--seed', itype=int, default=42)
 
     args = parser.parse_args()
 
@@ -44,21 +56,54 @@ def parse_args():
     return args
 
 
+def do_validation(model, valid_loader):
+    model.eval()
+    valid_metrics = {
+        'Val/loss': 0,
+        'Val/Cls loss': 0,
+        'Val/Angle loss': 0,
+        'Val/IoU loss': 0
+    }
+    
+    with torch.no_grad():
+        for img, gt_score_map, gt_geo_map, roi_mask in valid_loader:
+            loss, extra_info = model.train_step(img, gt_score_map, gt_geo_map, roi_mask)
+            valid_metrics['Val/loss'] += loss.item()
+            valid_metrics['Val/Cls loss'] += extra_info['cls_loss']
+            valid_metrics['Val/Angle loss'] += extra_info['angle_loss']
+            valid_metrics['Val/IoU loss'] += extra_info['iou_loss']
+        
+    for metric in valid_metrics.keys():
+        valid_metrics[metric] /= len(valid_loader)
+
+    return valid_metrics
+
+
+def train_val_split(dataset, val_split=0.2):
+    train_idx, val_idx = train_test_split(list(range(len(dataset))), test_size=val_split, random_state=42)
+    return Subset(dataset, train_idx), Subset(dataset, val_idx)
+
+
 def do_training(data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
                 learning_rate, max_epoch, save_interval):
-    dataset = SceneTextDataset(data_dir, split='train', image_size=image_size, crop_size=input_size)
-    dataset = EASTDataset(dataset)
+    dataset = [SceneTextDataset(x, split='train', image_size=image_size, crop_size=input_size) for x in data_dir]
+    dataset = EASTDataset(ConcatDataset(dataset))
+    valset = EASTDataset(SceneTextDataset("../input/data/ICDAR17_Korean", split="val", image_size=image_size, crop_size=input_size))
+
     num_batches = math.ceil(len(dataset) / batch_size)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    valid_loader = DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = EAST()
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
+    
+    best_metric_score = int(1e9)
 
-    model.train()
     for epoch in range(max_epoch):
+        model.train()
         epoch_loss, epoch_start = 0, time.time()
         with tqdm(total=num_batches) as pbar:
             for img, gt_score_map, gt_geo_map, roi_mask in train_loader:
@@ -79,10 +124,11 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
                 }
                 pbar.set_postfix(val_dict)
 
+        result = do_validation(model, valid_loader)
         scheduler.step()
 
-        print('Mean loss: {:.4f} | Elapsed time: {}'.format(
-            epoch_loss / num_batches, timedelta(seconds=time.time() - epoch_start)))
+        print('Mean loss: {:.4f} | Val loss: {:.4f} | Elapsed time: {} '.format(
+            epoch_loss / num_batches, result['Val/loss'], timedelta(seconds=time.time() - epoch_start)))
 
         if (epoch + 1) % save_interval == 0:
             if not osp.exists(model_dir):
@@ -90,9 +136,19 @@ def do_training(data_dir, model_dir, device, image_size, input_size, num_workers
 
             ckpt_fpath = osp.join(model_dir, 'latest.pth')
             torch.save(model.state_dict(), ckpt_fpath)
+            
+        if result['Val/loss'] < best_metric_score:
+            if not osp.exists(model_dir):
+                os.makedirs(model_dir)
+
+            ckpt_fpath = osp.join(model_dir, 'best.pth')
+            torch.save(model.state_dict(), ckpt_fpath)
+            best_metric_score = result['Val/loss']
+            print(f"saved {ckpt_fpath}")
 
 
 def main(args):
+    set_seed(args.seed) # init seed
     do_training(**args.__dict__)
 
 

@@ -5,11 +5,7 @@ import numpy as np
 import cv2
 from torch.utils.data import Dataset
 
-<<<<<<< HEAD
-
-=======
 # bounding box shrinking으로 center region 구함
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
 def shrink_bbox(bbox, coef=0.3, inplace=False):
     lens = [np.linalg.norm(bbox[i] - bbox[(i + 1) % 4], ord=2) for i in range(4)]
     r = [min(lens[(i - 1) % 4], lens[i]) for i in range(4)]
@@ -28,13 +24,9 @@ def shrink_bbox(bbox, coef=0.3, inplace=False):
         bbox[p2_idx] -= p1p2 / dist * r[p2_idx] * coef
     return bbox
 
-<<<<<<< HEAD
-
-=======
 # bbox의 각도만큼 회전된 축 상에서 두축을 따라 선형적으로 증가하는 map을 각각 생성
 # 1. x,y축을 따라 linear하게 증가하는 map 생성
 # 2. find_min_rect_angle에서 구한 각도만큼 회전
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
 def get_rotated_coords(h, w, theta, anchor):
     anchor = anchor.reshape(2, 1)
     rotate_mat = get_rotate_mat(theta)
@@ -47,20 +39,12 @@ def get_rotated_coords(h, w, theta, anchor):
     rotated_y = rotated_coord[1, :].reshape(y.shape)
     return rotated_x, rotated_y
 
-<<<<<<< HEAD
-
-=======
 # bounding box의 각도 구함
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
 def get_rotate_mat(theta):
     return np.array([[math.cos(theta), -math.sin(theta)],
                      [math.sin(theta), math.cos(theta)]])
 
-<<<<<<< HEAD
-
-=======
 # 회전된 박스와 원본박스의 point by point 차이가 가장 적은것을 선택하도록 함 
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
 def calc_error_from_rect(bbox):
     '''
     Calculate the difference between the vertices orientation and default orientation. Default
@@ -72,11 +56,7 @@ def calc_error_from_rect(bbox):
                     dtype=np.float32)
     return np.linalg.norm(bbox - rect, axis=0).sum()
 
-<<<<<<< HEAD
-
-=======
 # bounding box를 theta만큼 회전
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
 def rotate_bbox(bbox, theta, anchor=None):
     points = bbox.T
     if anchor is None:
@@ -84,27 +64,14 @@ def rotate_bbox(bbox, theta, anchor=None):
     rotated_points = np.dot(get_rotate_mat(theta), points - anchor) + anchor
     return rotated_points.T
 
-<<<<<<< HEAD
-
-=======
 # bounding box의 각도 구함 1
 # 몇도로 돌려야 min area rect 가 가장 작은 넓이가 되는지 각도 리턴 
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
 def find_min_rect_angle(bbox, rank_num=10):
     '''Find the best angle to rotate poly and obtain min rectangle
     '''
     areas = []
     angles = np.arange(-90, 90) / 180 * math.pi
     for theta in angles:
-<<<<<<< HEAD
-        rotated_bbox = rotate_bbox(bbox, theta)
-        x_min, y_min = np.min(rotated_bbox, axis=0)
-        x_max, y_max = np.max(rotated_bbox, axis=0)
-        areas.append((x_max - x_min) * (y_max - y_min))
-
-    best_angle, min_error = -1, float('inf')
-    for idx in np.argsort(areas)[:rank_num]:
-=======
         rotated_bbox = rotate_bbox(bbox, theta) # theta만큼 돌려보기
         x_min, y_min = np.min(rotated_bbox, axis=0)
         x_max, y_max = np.max(rotated_bbox, axis=0)
@@ -112,7 +79,6 @@ def find_min_rect_angle(bbox, rank_num=10):
 
     best_angle, min_error = -1, float('inf')
     for idx in np.argsort(areas)[:rank_num]: # 영역이 작은 순서대로 sorting
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
         rotated_bbox = rotate_bbox(bbox, angles[idx])
         error = calc_error_from_rect(rotated_bbox)
         if error < min_error:
@@ -123,16 +89,6 @@ def find_min_rect_angle(bbox, rank_num=10):
 
 def generate_score_geo_maps(image, word_bboxes, map_scale=0.25):
     img_h, img_w = image.shape[:2]
-<<<<<<< HEAD
-    map_h, map_w = int(img_h * map_scale), int(img_w * map_scale)
-    inv_scale = int(1 / map_scale)
-
-    score_map = np.zeros((map_h, map_w, 1), np.float32)
-    geo_map = np.zeros((map_h, map_w, 5), np.float32)
-
-    word_polys = []
-
-=======
     map_h, map_w = int(img_h * map_scale), int(img_w * map_scale) # 이미지 크기의 1/4만큼
     inv_scale = int(1 / map_scale)
 
@@ -142,17 +98,12 @@ def generate_score_geo_maps(image, word_bboxes, map_scale=0.25):
     word_polys = []
 
     # center region에 대해 score map, geo_map 생성
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
     for bbox in word_bboxes:
         poly = np.around(map_scale * shrink_bbox(bbox)).astype(np.int32)
         word_polys.append(poly)
 
         center_mask = np.zeros((map_h, map_w), np.float32)
-<<<<<<< HEAD
-        cv2.fillPoly(center_mask, [poly], 1)
-=======
         cv2.fillPoly(center_mask, [poly], 1) # 0으로 초기화된 score map에 [poly]영역에는 1을 채워넣어라 
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
 
         theta = find_min_rect_angle(bbox)
         rotated_bbox = rotate_bbox(bbox, theta) * map_scale
@@ -162,22 +113,15 @@ def generate_score_geo_maps(image, word_bboxes, map_scale=0.25):
         anchor = bbox[0] * map_scale
         rotated_x, rotated_y = get_rotated_coords(map_h, map_w, theta, anchor)
 
-<<<<<<< HEAD
-        d1, d2 = rotated_y - y_min, y_max - rotated_y
-=======
         # geo map구성하는 d1,d2,d3,d4,theta 생성
         # 2D ReLU
         d1, d2 = rotated_y - y_min, y_max - rotated_y 
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
         d1[d1 < 0] = 0
         d2[d2 < 0] = 0
         d3, d4 = rotated_x - x_min, x_max - rotated_x
         d3[d3 < 0] = 0
         d4[d4 < 0] = 0
-<<<<<<< HEAD
-=======
         # center_mask와 곱해서 중심 영역만 그라데이션을 갖는 값으로 만듬 
->>>>>>> dc7e8ab198995475f3939cfeb7b80931a1e50c0f
         geo_map[:, :, 0] += d1 * center_mask * inv_scale
         geo_map[:, :, 1] += d2 * center_mask * inv_scale
         geo_map[:, :, 2] += d3 * center_mask * inv_scale
