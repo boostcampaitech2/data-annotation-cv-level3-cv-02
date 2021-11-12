@@ -29,6 +29,7 @@ class Wandb:
         if isinstance(data_dirs, list):
             data_dirs = ' '.join(data_dirs)
 
+        data_dirs = list(map(lambda x:x.replace("../input/data/",""),data_dirs))
         name = f"{data_dirs}_{self.args['train_transform']}_{self.run_id}"
         tags = []
 
