@@ -176,7 +176,6 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
 
 
 def main(args):
-    set_seed(args.seed) # init seed
     run_id = make_run_id()
     cur_path = f'{args.model_dir}/{run_id}'
     make_dir(cur_path)
