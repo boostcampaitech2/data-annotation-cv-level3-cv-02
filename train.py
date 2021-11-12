@@ -19,9 +19,12 @@ from torch.utils.data import ConcatDataset, Subset
 from sklearn.model_selection import train_test_split
 import numpy as np
 import random
+from importlib import import_module
 
 from utils import Wandb,Calc_eval
 from utils import make_run_id, make_dir, save_args_to_json
+from transform import BasicTransform
+
 
 EVAL_DATA_LIST = {
     'loss': 0.0,
@@ -58,7 +61,8 @@ def parse_args():
     parser.add_argument('--save_interval', type=int, default=5)
     parser.add_argument('--seed', type=int, default=42)
 
-    parser.add_argument('--train_transform', type=str, default="test_transform")
+    parser.add_argument('--train_transform', type=str, default="BasicTransform")
+    parser.add_argument('--valid_transform', type=str, default="BasicTransform")
 
     parser.add_argument('--wandb_env_path', type=str, default="./.env")
     parser.add_argument('--wandb_entity', type=str, default="boostcamp-2th-cv-02team")
@@ -97,7 +101,7 @@ def train_val_split(dataset, val_split=0.2):
 
 
 def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
-                learning_rate, max_epoch, save_interval, seed, train_transform, wandb_env_path, wandb_entity,wandb_project,wandb_unique_tag) :
+                learning_rate, max_epoch, save_interval, seed, train_transform, valid_transform, wandb_env_path, wandb_entity,wandb_project,wandb_unique_tag) :
      # init seed
     set_seed(args.seed)
 
@@ -105,12 +109,15 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
     if type(data_dir) is not list:
         data_dir = [data_dir]
 
+    train_transform = getattr(import_module("transform"),args.train_transform)()
+    valid_transform = getattr(import_module("transform"),args.valid_transform)()
+    
     # load train data
     dataset = [SceneTextDataset(x, split='train', image_size=image_size, crop_size=input_size) for x in data_dir]
-    dataset = EASTDataset(ConcatDataset(dataset))
+    dataset = EASTDataset(ConcatDataset(dataset), transform=train_transform)
 
     # load validation data
-    valset = EASTDataset(SceneTextDataset("../input/data/ICDAR17_Korean", split="val", image_size=image_size, crop_size=input_size))
+    valset = EASTDataset(SceneTextDataset("../input/data/ICDAR17_Korean", split="val", image_size=image_size, crop_size=input_size), transform=valid_transform)
     num_batches = math.ceil(len(dataset) / batch_size)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     valid_loader = DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
