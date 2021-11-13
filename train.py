@@ -179,7 +179,7 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
             ckpt_fpath = osp.join(cur_path, 'best.pth')
             torch.save(model.state_dict(), ckpt_fpath)
             best_metric_score = valid_eval_metric['loss']
-            wandb.log("Valid", {"best_loss": best_metric_score})
+            wandb.log("Valid", **{"best_loss": best_metric_score})
             print(f"saved {ckpt_fpath}")
 
 
