@@ -134,18 +134,13 @@ def generate_score_geo_maps(image, word_bboxes, map_scale=0.25):
 
 
 class EASTDataset(Dataset):
-    def __init__(self, dataset, map_scale=0.25, to_tensor=True, transform=None):
+    def __init__(self, dataset, map_scale=0.25, to_tensor=True):
         self.dataset = dataset
         self.map_scale = map_scale
         self.to_tensor = to_tensor
-        self.transform = transform
+
     def __getitem__(self, idx):
         image, word_bboxes, roi_mask = self.dataset[idx]
-        if self.transform:
-            transfomred = self.transform(image=image, word_bboxes=word_bboxes, roi_mask=roi_mask)
-            image = transfomred['image']
-            word_bboxes = transfomred['word_bboxes']
-            roi_mask = transfomred['roi_mask']
         score_map, geo_map = generate_score_geo_maps(image, word_bboxes, map_scale=self.map_scale)
 
         mask_size = int(image.shape[0] * self.map_scale), int(image.shape[1] * self.map_scale)

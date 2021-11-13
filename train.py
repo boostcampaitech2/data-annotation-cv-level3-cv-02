@@ -61,8 +61,8 @@ def parse_args():
     parser.add_argument('--save_interval', type=int, default=5)
     parser.add_argument('--seed', type=int, default=42)
 
-    parser.add_argument('--train_transform', type=str, default="BasicTransform")
-    parser.add_argument('--valid_transform', type=str, default="BasicTransform")
+    parser.add_argument('--train_transform', type=str, default="DefaultTransform")
+    parser.add_argument('--valid_transform', type=str, default="DefaultTransform")
 
     parser.add_argument('--wandb_env_path', type=str, default="./.env")
     parser.add_argument('--wandb_entity', type=str, default="boostcamp-2th-cv-02team")
@@ -113,11 +113,11 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
     valid_transform = getattr(import_module("transform"),args.valid_transform)()
     
     # load train data
-    dataset = [SceneTextDataset(x, split='train', image_size=image_size, crop_size=input_size) for x in data_dir]
-    dataset = EASTDataset(ConcatDataset(dataset), transform=train_transform)
+    dataset = [SceneTextDataset(x, split='train', image_size=image_size, crop_size=input_size, transform=train_transform) for x in data_dir]
+    dataset = EASTDataset(ConcatDataset(dataset))
 
     # load validation data
-    valset = EASTDataset(SceneTextDataset("../input/data/ICDAR17_Korean", split="val", image_size=image_size, crop_size=input_size), transform=valid_transform)
+    valset = EASTDataset(SceneTextDataset("../input/data/ICDAR17_Korean", split="val", image_size=image_size, crop_size=input_size, transform=valid_transform))
     num_batches = math.ceil(len(dataset) / batch_size)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
     valid_loader = DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=num_workers)

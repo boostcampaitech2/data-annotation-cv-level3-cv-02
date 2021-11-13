@@ -31,7 +31,8 @@ from albumentations import (
     GridDropout,  # GridMask
     ChannelShuffle,
     CoarseDropout,  # Cutout
-    ColorJitter
+    ColorJitter,
+    Normalize
 )
 from albumentations.augmentations.crops.transforms import CropNonEmptyMaskIfExists
 
@@ -39,6 +40,14 @@ from albumentations.augmentations.crops.transforms import CropNonEmptyMaskIfExis
 
 def NoTransform():
     return None
+
+def DefaultTransform():
+    return A.Compose(
+        [
+            ColorJitter(0.5, 0.5, 0.5, 0.25),
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ]
+    )
 
 
 def BasicTransform():
