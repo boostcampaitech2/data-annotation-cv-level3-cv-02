@@ -104,7 +104,7 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
                 learning_rate, max_epoch, save_interval, seed, train_transform, valid_transform, wandb_env_path, wandb_entity,wandb_project,wandb_unique_tag) :
      # init seed
     set_seed(args.seed)
-
+    
     # data_dir로 복수개의 경로가 입력 되었을 때, 혹은 단일 경로만 입력 되었을 때를 처리하기 위함
     if type(data_dir) is not list:
         data_dir = [data_dir]
@@ -179,6 +179,7 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
             ckpt_fpath = osp.join(cur_path, 'best.pth')
             torch.save(model.state_dict(), ckpt_fpath)
             best_metric_score = valid_eval_metric['loss']
+            wandb.log("Valid", {"best_loss": best_metric_score})
             print(f"saved {ckpt_fpath}")
 
 

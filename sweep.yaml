@@ -3,7 +3,7 @@ entity: boostcamp-2th-cv-02team
 project: data-annotation-cv-level3-02
 method: grid
 metric:
-  name: Valid/loss
+  name: Valid/best_loss
   goal: minimize
 parameters:
   learning_rate:
