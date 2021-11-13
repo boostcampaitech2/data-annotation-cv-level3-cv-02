@@ -86,12 +86,12 @@ def HardTransform():
 
 def CutmixHardTransform():
     return A.Compose([
-        Resize(512, 512),
+        # Resize(512, 512),
         RandomRotate90(),
         HorizontalFlip(),
         VerticalFlip(),
         Transpose(),
         Rotate(),
         RandomBrightnessContrast(),
-        ToTensorV2()
+        # ToTensorV2()
     ])
