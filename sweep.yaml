@@ -1,0 +1,20 @@
+program: train.py
+entity: boostcamp-2th-cv-02team
+project: data-annotation-cv-level3-02
+method: grid
+metric:
+  name: Valid/best_loss
+  goal: minimize
+parameters:
+  learning_rate:
+    value: 0.001
+  batch_size:
+    value: 32
+  max_epoch:
+    value: 200
+  wandb_unique_tag:
+    value: sweep_test
+  train_transform: 
+    values: [NoTransform, BasicTransform, CustomTransform, HardTransform]
+  valid_transform:
+    value: NoTransform

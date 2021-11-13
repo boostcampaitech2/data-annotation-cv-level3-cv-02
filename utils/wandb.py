@@ -25,9 +25,9 @@ class Wandb:
         :param args: arguments변수
         :param **kwargs: wandb의 태그와 name에 추가하고싶은 내용을 넣어줌 ex_ fold=1
         """
-        data_dirs = self.args['data_dir']
-        if isinstance(data_dirs, list):
-            data_dirs = ' '.join(data_dirs)
+        data_dir = self.args['data_dir']
+        if type(data_dir) is not list:
+            data_dirs = [data_dir]
 
         data_dirs = list(map(lambda x:x.replace("../input/data/",""),data_dirs))
         name = f"{data_dirs}_{self.args['train_transform']}_{self.run_id}"
@@ -35,7 +35,7 @@ class Wandb:
 
         if self.args['wandb_unique_tag']:
             tags = [f"wandb_unique_tag: {self.args['wandb_unique_tag']}"]
-            name += f"_{self['wandb_unique_tag']}"
+            name += f"_{self.args['wandb_unique_tag']}"
 
         for k, v in self.args.items():
             tags.append(f"{k}: {v}")
