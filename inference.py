@@ -3,8 +3,9 @@ import os.path as osp
 import json
 from argparse import ArgumentParser
 from glob import glob
-import numpy as np
+
 import torch
+import numpy as np
 import cv2
 from torch import cuda
 from model import EAST
@@ -21,8 +22,8 @@ def parse_args():
 
     # Conventional args
     parser.add_argument('--data_dir', default=os.environ.get('SM_CHANNEL_EVAL'))
-    parser.add_argument('--model_dir', default=os.environ.get('SM_CHANNEL_MODEL', 'trained_models'))
-    parser.add_argument('--output_dir', default=os.environ.get('SM_OUTPUT_DATA_DIR', 'predictions'))
+    parser.add_argument('--model_dir', default=os.environ.get('SM_CHANNEL_MODEL', '/opt/ml/code/trained_models'))
+    parser.add_argument('--output_dir', default=os.environ.get('SM_OUTPUT_DATA_DIR', '/opt/ml/code/predictions'))
 
     parser.add_argument('--device', default='cuda' if cuda.is_available() else 'cpu')
     parser.add_argument('--input_size', type=int, default=1024)
@@ -46,11 +47,12 @@ def do_inference(model, ckpt_fpath, data_dir, input_size, batch_size, split='pub
                          [-1, 2, 9, 2, -1],
                          [-1, 2, 2, 2, -1],
                          [-1, -1, -1, -1, -1]]) / 9.0
+
     images = []
     for image_fpath in tqdm(glob(osp.join(data_dir, '{}/*'.format(split)))):
         image_fnames.append(osp.basename(image_fpath))
-
-        images.append(cv2.filter2D(cv2.imread(image_fpath)[:, :, ::-1]), -1 , filter_sharp)
+        images.append(cv2.filter2D(cv2.imread(image_fpath)[:, :, ::-1], -1 , filter_sharp))
+        # images.append(cv2.imread(image_fpath)[:, :, ::-1])
         if len(images) == batch_size:
             by_sample_bboxes.extend(detect(model, images, input_size))
             images = []
@@ -71,7 +73,7 @@ def main(args):
     model = EAST(pretrained=False).to(args.device)
 
     # Get paths to checkpoint files
-    ckpt_fpath = osp.join(args.model_dir, 'latest.pth')
+    ckpt_fpath = osp.join(args.model_dir, 'best.pth')
 
     if not osp.exists(args.output_dir):
         os.makedirs(args.output_dir)
