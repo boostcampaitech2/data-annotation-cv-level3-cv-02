@@ -34,7 +34,8 @@ from albumentations import (
     CoarseDropout,  # Cutout
     ColorJitter,
     Normalize,
-    InvertImg
+    InvertImg,
+    Sharpen
 )
 from albumentations.augmentations.crops.transforms import CropNonEmptyMaskIfExists
 
@@ -55,35 +56,35 @@ def DefaultTransform():
 def T1():
     return A.Compose(
         [
-            Rotate(limit=45, p=1.0),
-            ColorJitter(0.5, 0.5, 0.5, 0.25),
-            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+            Rotate(limit=80, p=0.5),
+            ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ]
     )
 
 def T2():
     return A.Compose(
         [
-            CLAHE(p=1.0), # sharpening
-            ColorJitter(0.5, 0.5, 0.5, 0.25),
-            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+            Sharpen(p=0.5), # sharpening
+            ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ]
     )
 
 def T3():
     return A.Compose(
         [
-            Blur(p=1.0), 
-            ColorJitter(0.5, 0.5, 0.5, 0.25),
-            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+            Blur(p=0.5), 
+            ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ]
     )
-def T3():
+def T4():
     return A.Compose(
         [
-            InvertImg(p=1.0), 
-            ColorJitter(0.5, 0.5, 0.5, 0.25),
-            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+            InvertImg(p=0.5), 
+            ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ]
     )
 
