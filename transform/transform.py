@@ -61,6 +61,14 @@ def T1():
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ]
     )
+def T1_origin():
+    return A.Compose(
+        [
+            Rotate(limit=80, p=0.5),
+            ColorJitter(0.5, 0.5, 0.5, 0.25),
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ]
+    )
 
 def T2():
     return A.Compose(
@@ -68,6 +76,15 @@ def T2():
             Sharpen(p=0.5), # sharpening
             ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+        ]
+    )
+
+def T2_origin():
+    return A.Compose(
+        [
+            Sharpen(p=0.5), # sharpening
+            ColorJitter(0.5, 0.5, 0.5, 0.25),
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
         ]
     )
 
@@ -79,12 +96,31 @@ def T3():
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
         ]
     )
+
+def T3_origin():
+    return A.Compose(
+        [
+            Blur(p=0.5), 
+            ColorJitter(0.5, 0.5, 0.5, 0.25),
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ]
+    )
+
 def T4():
     return A.Compose(
         [
             InvertImg(p=0.5), 
             ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
             Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+        ]
+    )
+
+def T4():
+    return A.Compose(
+        [
+            InvertImg(p=0.5), 
+            ColorJitter(0.5, 0.5, 0.5, 0.25),
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
         ]
     )
 
