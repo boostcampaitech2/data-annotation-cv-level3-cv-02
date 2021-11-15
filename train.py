@@ -57,8 +57,8 @@ def parse_args():
     parser.add_argument('--image_size', type=int, default=1024)
     parser.add_argument('--input_size', type=int, default=512)
     parser.add_argument('--batch_size', type=int, default=32)
-    parser.add_argument('--learning_rate', type=float, default=1e-3)
-    parser.add_argument('--max_epoch', type=int, default=200)
+    parser.add_argument('--learning_rate', type=float, default=1e-4)
+    parser.add_argument('--max_epoch', type=int, default=400)
     parser.add_argument('--save_interval', type=int, default=5)
     parser.add_argument('--seed', type=int, default=42)
 
@@ -68,7 +68,7 @@ def parse_args():
     parser.add_argument('--wandb_env_path', type=str, default="./.env")
     parser.add_argument('--wandb_entity', type=str, default="boostcamp-2th-cv-02team")
     parser.add_argument('--wandb_project', type=str, default="data-annotation-cv-level3-02")
-    parser.add_argument('--wandb_unique_tag', type=str, default="")
+    parser.add_argument('--wandb_unique_tag', type=str, default="seowon")
    
     args = parser.parse_args()
 
@@ -126,6 +126,11 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = EAST()
     model.to(device)
+
+    # only for exp
+    model.load_state_dict(torch.load('./trained_models/1113_182810/best.pth', map_location='cpu'))
+    model.eval()
+
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
 
