@@ -115,7 +115,7 @@ def T4():
         ]
     )
 
-def T4():
+def T4_origin():
     return A.Compose(
         [
             InvertImg(p=0.5), 
