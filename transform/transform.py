@@ -26,13 +26,16 @@ from albumentations import (
     Resize,
     MotionBlur,
     MedianBlur,
+    Blur,
     GaussianBlur,
     GaussNoise,
     GridDropout,  # GridMask
     ChannelShuffle,
     CoarseDropout,  # Cutout
     ColorJitter,
-    Normalize
+    Normalize,
+    InvertImg,
+    Sharpen
 )
 from albumentations.augmentations.crops.transforms import CropNonEmptyMaskIfExists
 
@@ -49,6 +52,41 @@ def DefaultTransform():
         ]
     )
 
+# variable comtinations of transform for sweep
+def T1():
+    return A.Compose(
+        [
+            Rotate(limit=80, p=0.5),
+            ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+        ]
+    )
+
+def T2():
+    return A.Compose(
+        [
+            Sharpen(p=0.5), # sharpening
+            ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+        ]
+    )
+
+def T3():
+    return A.Compose(
+        [
+            Blur(p=0.5), 
+            ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+        ]
+    )
+def T4():
+    return A.Compose(
+        [
+            InvertImg(p=0.5), 
+            ColorJitter(0.5, 0.5, 0.5, 0.25, p=0.3),
+            Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+        ]
+    )
 
 def BasicTransform():
     return A.Compose(
