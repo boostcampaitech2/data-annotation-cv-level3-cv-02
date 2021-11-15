@@ -11,9 +11,11 @@ parameters:
   batch_size:
     value: 32
   max_epoch:
-    value: 200
+    value: 100
   wandb_unique_tag:
     value: sweep_test
+  optimizer:
+    values: [Adam, SparseAdam]
   train_transform: 
     values: [NoTransform, BasicTransform, CustomTransform, HardTransform]
   valid_transform:

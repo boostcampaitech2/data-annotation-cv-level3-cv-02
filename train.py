@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 
 import torch
 from torch import cuda
+from torch import optim
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 from tqdm import tqdm
@@ -61,6 +62,7 @@ def parse_args():
     parser.add_argument('--max_epoch', type=int, default=200)
     parser.add_argument('--save_interval', type=int, default=5)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--optimizer', type=str, default="Adagrad", help="Adam, SGD, Adagrad, Adadelta, AdamW, SparseAdam, Adamax, ASGD / check https://pytorch.org/docs/stable/optim.html")
 
     parser.add_argument('--train_transform', type=str, default="DefaultTransform")
     parser.add_argument('--valid_transform', type=str, default="DefaultTransform")
@@ -102,7 +104,7 @@ def train_val_split(dataset, val_split=0.2):
 
 
 def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_size, num_workers, batch_size,
-                learning_rate, max_epoch, save_interval, seed, train_transform, valid_transform, wandb_env_path, wandb_entity,wandb_project,wandb_unique_tag) :
+                learning_rate, max_epoch, save_interval, seed, train_transform, valid_transform, wandb_env_path, wandb_entity,wandb_project,wandb_unique_tag, optimizer) :
      # init seed
     set_seed(args.seed)
     
@@ -127,11 +129,13 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
     model = EAST()
         
     # only for exp
+    # resume을 하지 않으려면 이 두줄을 주석걸어주세요
     model.load_state_dict(torch.load('./trained_models/1113_182810/best.pth', map_location='cpu'))
     model.eval()
 
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = getattr(import_module("torch.optim"), args.optimizer)(model.parameters(), lr=learning_rate)
+
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
 
     best_metric_score = int(1e9)
