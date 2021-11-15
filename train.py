@@ -125,6 +125,11 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = EAST()
+        
+    # only for exp
+    model.load_state_dict(torch.load('./trained_models/1113_182810/best.pth', map_location='cpu'))
+    model.eval()
+
     model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[max_epoch // 2], gamma=0.1)
