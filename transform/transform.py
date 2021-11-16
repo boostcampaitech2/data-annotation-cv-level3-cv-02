@@ -115,9 +115,44 @@ def T4():
         ]
     )
 
+
 def T4_origin():
     return A.Compose(
         [
+            Blur(p=0.5), 
+            InvertImg(p=0.5), 
+            ColorJitter(0.5, 0.5, 0.5, 0.25),
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ]
+    )
+
+def SharpenInvertTransform():
+    return A.Compose(
+        [
+            Sharpen(p=0.5),
+            InvertImg(p=0.5), 
+            ColorJitter(0.5, 0.5, 0.5, 0.25),
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ]
+    )
+
+def BlurInvertTransform():
+    return A.Compose(
+        [
+            Blur(p=0.5),
+            InvertImg(p=0.5), 
+            ColorJitter(0.5, 0.5, 0.5, 0.25),
+            Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+        ]
+    )
+
+def SharpenBlurInvertTransform():
+    return A.Compose(
+        [
+            OneOf([ Sharpen(p=1.0),
+                    Blur(p=1.0),
+                    GaussNoise(p=1.0)          
+            ], p=1),
             InvertImg(p=0.5), 
             ColorJitter(0.5, 0.5, 0.5, 0.25),
             Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))

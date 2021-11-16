@@ -70,7 +70,7 @@ def parse_args():
     parser.add_argument('--wandb_env_path', type=str, default="./.env")
     parser.add_argument('--wandb_entity', type=str, default="boostcamp-2th-cv-02team")
     parser.add_argument('--wandb_project', type=str, default="data-annotation-cv-level3-02")
-    parser.add_argument('--wandb_unique_tag', type=str, default="")
+    parser.add_argument('--wandb_unique_tag', type=str, default="wonny")
    
     args = parser.parse_args()
 
@@ -130,7 +130,7 @@ def do_training(wandb, cur_path, data_dir, model_dir, device, image_size, input_
         
     # only for exp
     # resume을 하지 않으려면 이 두줄을 주석걸어주세요
-    model.load_state_dict(torch.load('./trained_models/1113_182810/best.pth', map_location='cpu'))
+    model.load_state_dict(torch.load('./trained_models/best_hb.pth', map_location='cpu'))
     model.eval()
 
     model.to(device)
